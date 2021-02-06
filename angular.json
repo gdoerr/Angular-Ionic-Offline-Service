@@ -1,7 +1,51 @@
 {
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "cli": {
+    "analytics": "3ea4d6f8-053b-432c-a28a-a6c109daa7fb"
+  },
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-  }
+    "offline": {
+      "projectType": "library",
+      "root": "projects/offline",
+      "sourceRoot": "projects/offline/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "tsConfig": "projects/offline/tsconfig.lib.json",
+            "project": "projects/offline/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/offline/tsconfig.lib.prod.json"
+            }
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/offline/src/test.ts",
+            "tsConfig": "projects/offline/tsconfig.spec.json",
+            "karmaConfig": "projects/offline/karma.conf.js"
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "projects/offline/tsconfig.lib.json",
+              "projects/offline/tsconfig.spec.json"
+            ],
+            "exclude": [
+              "**/node_modules/**"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "defaultProject": "offline"
 }
