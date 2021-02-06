@@ -25,7 +25,10 @@ export abstract class OfflineService<T> {
   private sqlGetElements = `select element from ${this.getTypePrefix()} where id in (?)`;
   private sqlAddElement = `insert into ${this.getTypePrefix()} (id, ttl, element) values (?, ?, ?)`;
 
+  private invalidationInterval:number = 5000;   // Milliseconds between invalidations
+
   private isOnline:boolean = false;
+  private lastInvalidation:number = 0;
   private database:SQLiteObject;
 
   protected constructor(
@@ -96,12 +99,12 @@ export abstract class OfflineService<T> {
    */
   getItem(ids: string[]):Observable<T[]> {
     return new Observable<T[]>(obs => {
-      let now = new Date().getTime();
-
-      let haveIds:string[] = [];
 
       // Remove expired entries
       this.removeExpired().subscribe(() => {
+        // The set of IDs retrieved from storage
+        const haveIds:string[] = [];
+
         // Now get all of the matching elements from the db
         this.database.executeSql(this.sqlGetElements, [ids]).then(res => {
 
@@ -113,12 +116,13 @@ export abstract class OfflineService<T> {
             haveIds.push(this.getId(element))
           }
 
-          // calculate the missing element set
+          // calculate the set of IDs for the missing elements
           const needIds:string[] = ids.filter(x => !haveIds.includes(x));
 
           // If there are elements we need AND we're online...
           if(needIds.length > 0 && this.isOnline) {
             // Calc the time to live for the new records
+            const now = new Date().getTime();
             const ttl = this.getTtl() === -1 ? -1 : this.getTtl() + now;
 
             // Get the missing elements from the API
@@ -157,11 +161,17 @@ export abstract class OfflineService<T> {
    */
   private removeExpired():Observable<void> {
     const now = new Date().getTime();
-    return from(
-      this.database.executeSql(this.sqlDeleteExpired, [ now ]).catch(e => {
-        console.log('Exception removing expired entities', e);
-        return e;
-      })
-    );
+    if(this.lastInvalidation + this.invalidationInterval < now) {
+      this.lastInvalidation = now;
+
+      return from(
+        this.database.executeSql(this.sqlDeleteExpired, [now]).catch(e => {
+          console.log('Exception removing expired entities', e);
+          return e;
+        })
+      );
+    } else {
+      return new Observable<void>((obs) => obs.complete());
+    }
   }
 }
