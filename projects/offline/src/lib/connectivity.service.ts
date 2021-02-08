@@ -4,7 +4,8 @@ import { map } from 'rxjs/operators';
 
 /**
  * Service to monitor the online/offline network connection state
- * from browser APIs
+ * from browser APIs. This is a place-holder and not a valid implementation
+ * for production.
  */
 @Injectable({ providedIn: 'root' })
 export class ConnectivityService {
