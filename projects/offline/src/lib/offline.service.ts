@@ -18,21 +18,28 @@ import {SQLiteObject} from "@ionic-native/sqlite/ngx";
   providedIn: 'root'
 })
 export abstract class OfflineService<T> {
-
+  // SQL Statements
   private sqlDeleteAll = `DELETE FROM ${this.getTypePrefix()}`;
   private sqlDeleteId = `DELETE FROM ${this.getTypePrefix()} where id = ?`
   private sqlDeleteExpired = `delete from ${this.getTypePrefix()} WHERE ttl <> -1 and ttl < ?`;
   private sqlGetElements = `select element from ${this.getTypePrefix()} where id in (?)`;
   private sqlAddElement = `insert into ${this.getTypePrefix()} (id, ttl, element) values (?, ?, ?)`;
 
-  private invalidationInterval:number = 5000;   // Milliseconds between invalidations
+  // Suppress DB invalidations to every x milliseconds
+  private invalidationInterval:number = 5000;
+  private lastInvalidation:number = 0;
 
   private isOnline:boolean = false;
-  private lastInvalidation:number = 0;
   private database:SQLiteObject;
 
+  /**
+   * Initialize the service
+   * @param sqlite
+   * @param service
+   * @protected
+   */
   protected constructor(
-    private sqlite: SQLite,
+    private sqlite:SQLite,
     private service:ConnectivityService
   ) {
     // Add network monitoring
@@ -112,7 +119,7 @@ export abstract class OfflineService<T> {
           for(let i = 0, len = res.rows.length; i < length; i++) {
             const element:T = res.rows.item(i).element;
             obs.next(element);
-            // Save the IDs we've retrieved so we can the the other one from the API
+            // Save the IDs we've retrieved so we can retrieve the remaining elements from the API
             haveIds.push(this.getId(element))
           }
 
